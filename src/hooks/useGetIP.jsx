@@ -9,23 +9,29 @@ const useGetIP = () => {
     const fetchLocation = async () => {
       try {
         setLoading(true);
-        // Tambahkan https dan pastikan endpoint benar
-        const response = await fetch('https://freeipapi.com/api/json');
+        // Endpoint ip-api.com (Note: Free version is HTTP only)
+        const response = await fetch('http://ip-api.com/json/');
         
-        if (!response.ok) throw new Error('Gagal fetch data');
+        if (!response.ok) throw new Error('Gagal fetch data dari ip-api');
         
         const result = await response.json();
+
+        if (result.status === 'fail') {
+          throw new Error(result.message);
+        }
         
-        // Mapping Khusus FreeIPAPI
+        // Mapping sesuai dokumentasi ip-api.com
         setData({
-          ip: result.ipAddress,
-          city: result.cityName,
+          ip: result.query,          // ip-api menggunakan 'query' untuk IP
+          city: result.city,
           regionName: result.regionName,
-          country: result.countryName,
-          lat: result.latitude,
-          lon: result.longitude,
-          isp: 'N/A', // FreeIPAPI versi gratis sering tidak memberikan nama ISP/Org secara detail
-          asn: `AS${result.asn || ''}`,
+          country: result.country,
+          lat: result.lat,
+          lon: result.lon,
+          isp: result.isp,           // ip-api memberikan data ISP lengkap
+          org: result.org,           // Nama Organisasi
+          asn: result.as,            // Format: "AS12345 Nama Provider"
+          zip: result.zip
         });
       } catch (err) {
         setError(err.message);

