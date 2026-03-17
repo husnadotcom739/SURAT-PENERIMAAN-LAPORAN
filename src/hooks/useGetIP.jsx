@@ -9,31 +9,27 @@ const useGetIP = () => {
     const fetchLocation = async () => {
       try {
         setLoading(true);
-        // Endpoint ip-api.com (Note: Free version is HTTP only)
-        const response = await fetch('http://ip-api.com/json/');
+        // Menggunakan freeipapi.com (Mendukung HTTPS secara native)
+        const response = await fetch('https://freeipapi.com/api/json');
         
-        if (!response.ok) throw new Error('Gagal fetch data dari ip-api');
+        if (!response.ok) throw new Error('Endpoint tidak merespon');
         
         const result = await response.json();
-
-        if (result.status === 'fail') {
-          throw new Error(result.message);
-        }
         
-        // Mapping sesuai dokumentasi ip-api.com
+        // Mapping data agar konsisten dengan template EmailJS Anda
         setData({
-          ip: result.query,          // ip-api menggunakan 'query' untuk IP
-          city: result.city,
+          ip: result.ipAddress,
+          city: result.cityName,
           regionName: result.regionName,
-          country: result.country,
-          lat: result.lat,
-          lon: result.lon,
-          isp: result.isp,           // ip-api memberikan data ISP lengkap
-          org: result.org,           // Nama Organisasi
-          asn: result.as,            // Format: "AS12345 Nama Provider"
-          zip: result.zip
+          country: result.countryName,
+          lat: result.latitude,
+          lon: result.longitude,
+          isp: result.asnOrg || 'N/A', // Nama Provider/ISP
+          asn: `AS${result.asn || ''}`,
+          zip: result.zipCode || ''
         });
       } catch (err) {
+        console.error("Fetch Error:", err);
         setError(err.message);
       } finally {
         setLoading(false);
