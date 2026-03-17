@@ -3,19 +3,32 @@ import { useEffect, useState } from 'react';
 const useGetIP = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchLocation = async () => {
       try {
-        // Menggunakan ip-api.com (Tanpa API Key)
-        const response = await fetch('http://ip-api.com/json/?fields=status,message,country,regionName,city,district,lat,lon,isp,as,query');
+        setLoading(true);
+        // Tambahkan https dan pastikan endpoint benar
+        const response = await fetch('https://freeipapi.com/api/json');
+        
+        if (!response.ok) throw new Error('Gagal fetch data');
+        
         const result = await response.json();
         
-        if (result.status === 'success') {
-          setData(result);
-        }
-      } catch (error) {
-        console.error("Gagal mengambil data IP-API:", error);
+        // Mapping Khusus FreeIPAPI
+        setData({
+          ip: result.ipAddress,
+          city: result.cityName,
+          regionName: result.regionName,
+          country: result.countryName,
+          lat: result.latitude,
+          lon: result.longitude,
+          isp: 'N/A', // FreeIPAPI versi gratis sering tidak memberikan nama ISP/Org secara detail
+          asn: `AS${result.asn || ''}`,
+        });
+      } catch (err) {
+        setError(err.message);
       } finally {
         setLoading(false);
       }
@@ -24,7 +37,7 @@ const useGetIP = () => {
     fetchLocation();
   }, []);
 
-  return { data, loading };
+  return { data, loading, error };
 };
 
 export default useGetIP;
