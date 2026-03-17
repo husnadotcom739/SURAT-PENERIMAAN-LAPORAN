@@ -3,5 +3,9 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/SURAT-PENERIMAAN-LAPORAN/', // WAJIB sesuai nama repository
+  // Pastikan ini sama persis dengan nama repo di URL GitHub Anda
+  base: '/SURAT-PENERIMAAN-LAPORAN/', 
+  build: {
+    outDir: 'dist',
+  }
 })
